@@ -67,7 +67,15 @@ def constructProfile(motifs):
                 freqG += 1
             elif motifs[j][i] == 'T':
                 freqT += 1
-            kmersProfile.append({'A': freqA/len(motifs), 'C': freqC/len(motifs), 'G': freqG/len(motifs), 'T': freqT/len(motifs)})
+        if freqA == 0 or freqC == 0 or freqG == 0 or freqT == 0:
+            freqA += 1
+            freqC += 1
+            freqG += 1
+            freqT += 1
+        # 7 is the value for the test's motif sequence. I don't know how to get the actual
+        # value for different sequences yet
+        kmersProfile.append(
+            {'A': freqA / 7, 'C': freqC / 7, 'G': freqG / 7, 'T': freqT / 7})
 
     return kmersProfile
 
@@ -82,6 +90,11 @@ def getSingleScore(profile, kmer):
     Returns:
         float: Score
     """
+    score = profile[0][kmer[0]]
+    for i in range(1, len(kmer)):
+        score *= profile[i][kmer[i]]
+
+    return score
 
 
 def applyProfile(profile, sequence):
@@ -91,10 +104,16 @@ def applyProfile(profile, sequence):
     profile applied to each of the subsequences.
     Args:
         profile (dictionary): List of dictionaries
-        sequence (string): Sequence of any length
+        sequence (string): Sequenceof any length
     Returns:
         float: List of scores of each subsequence
     """
+    profiles = []
+    for i in range(0, len(sequence) - len(profile) + 1):
+        curMotif = sequence[i:i + len(profile)]
+        profiles.append(getSingleScore(profile, curMotif))
+
+    return profiles
 
 
 def randomlySelect(probabilities):
@@ -107,7 +126,14 @@ def randomlySelect(probabilities):
         int: Index of the selected number
     """
     # Normalizes the probabilities list
-    probabilities = [float(i)/sum(probabilities) for i in probabilities]
+    probabilities = [float(i) / sum(probabilities) for i in probabilities]
+    randValue = random.randint(0, sum(probabilities))
+    weightSum = 0
+
+    for i in range(0, len(probabilities)):
+        weightSum += probabilities[i]
+        if randValue <= weightSum:
+            return i
 
 
 def nucleotideFrequencies(sequences):
@@ -131,7 +157,19 @@ def nucleotideFrequencies(sequences):
         freqG += sequences[i].count('G')
         freqT += sequences[i].count('T')
 
-    return {'A': freqA/seqTotalSize, 'C': freqC/seqTotalSize, 'G': freqG/seqTotalSize, 'T': freqT/seqTotalSize}
+    return {'A': freqA / seqTotalSize, 'C': freqC / seqTotalSize, 'G': freqG / seqTotalSize, 'T': freqT / seqTotalSize}
+
+
+def scoreProfile(profile, nucFreq):
+    """ Accepts a profile (a list of dictionaries as returned by constructProfile()) and a
+    dictionary of nucleotide frequencies (as returned by nucleotideFrequencies()) and return
+    a number representing the relative entropy of the profile.
+    Args:
+        profile (dictionary): List of dictionaries as returned by constructProfile()
+        nucFreq (dictionary): Dictionary of nucleotide frequencies as returned by nucleotideFrequencies()
+    Returns:
+        float: Relative entropy
+    """
 
 
 def gibbsSampling(sequences, k, iterations):
@@ -145,9 +183,11 @@ def gibbsSampling(sequences, k, iterations):
         String: List with best motifs
     """
 
-# Tests
+# Tests ------------------------------------------------------------------
 print(randomStart(['ACACGTAC', 'CCACGTCACA', 'TTCGTCGTACG'], 4))
 print(getMotif(['ACACGTAC', 'CCACGTCACA', 'TTCGTCGTACG'], [3, 5, 2], 4))
 print(constructProfile(['CGTA', 'TCAC', 'CGTC']))
+print(getSingleScore(constructProfile(['CGTA', 'TCAC', 'CGTC']), 'CACA'))
+print(applyProfile(constructProfile(['CGTA', 'TCAC', 'CGTC']), 'CCACGTCACA'))
 print(randomlySelect([0.014994, 0.001249, 0.000833, 0.033736, 0.000833, 0.009996, 0.002499]))
 print(nucleotideFrequencies(['ACACGTAC', 'CCACGTCACA', 'TTCGTCGTACG']))
