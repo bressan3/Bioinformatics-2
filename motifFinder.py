@@ -1,4 +1,5 @@
 import random
+import math
 
 
 def readInput(filename):
@@ -54,10 +55,10 @@ def constructProfile(motifs):
     """
     kmersProfile = []
     for i in range(0, len(motifs[0])):
-        freqA = 0
-        freqC = 0
-        freqG = 0
-        freqT = 0
+        freqA = 1
+        freqC = 1
+        freqG = 1
+        freqT = 1
         for j in range(0, len(motifs)):
             if motifs[j][i] == 'A':
                 freqA += 1
@@ -67,15 +68,9 @@ def constructProfile(motifs):
                 freqG += 1
             elif motifs[j][i] == 'T':
                 freqT += 1
-        if freqA == 0 or freqC == 0 or freqG == 0 or freqT == 0:
-            freqA += 1
-            freqC += 1
-            freqG += 1
-            freqT += 1
-        # 7 is the value for the test's motif sequence. I don't know how to get the actual
-        # value for different sequences yet
-        kmersProfile.append(
-            {'A': freqA / 7, 'C': freqC / 7, 'G': freqG / 7, 'T': freqT / 7})
+
+        kmersProfile.append({'A': freqA / (len(motifs) + 4), 'C': freqC / (
+            len(motifs) + 4), 'G': freqG / (len(motifs) + 4), 'T': freqT / (len(motifs) + 4)})
 
     return kmersProfile
 
@@ -170,6 +165,13 @@ def scoreProfile(profile, nucFreq):
     Returns:
         float: Relative entropy
     """
+    entropy = 0
+
+    for i in range(0, len(profile)):
+        entropy += (profile[i]['A'] * math.log(profile[i]['A'] / nucFreq['A'], 2)) + (profile[i]['C'] * math.log(profile[i]['C'] / nucFreq['C'], 2)) + (
+            profile[i]['G'] * math.log(profile[i]['G'] / nucFreq['G'], 2)) + (profile[i]['T'] * math.log(profile[i]['T'] / nucFreq['T'], 2))
+
+    return entropy
 
 
 def gibbsSampling(sequences, k, iterations):
@@ -189,5 +191,8 @@ print(getMotif(['ACACGTAC', 'CCACGTCACA', 'TTCGTCGTACG'], [3, 5, 2], 4))
 print(constructProfile(['CGTA', 'TCAC', 'CGTC']))
 print(getSingleScore(constructProfile(['CGTA', 'TCAC', 'CGTC']), 'CACA'))
 print(applyProfile(constructProfile(['CGTA', 'TCAC', 'CGTC']), 'CCACGTCACA'))
-print(randomlySelect([0.014994, 0.001249, 0.000833, 0.033736, 0.000833, 0.009996, 0.002499]))
+print(randomlySelect([0.014994, 0.001249, 0.000833,
+                      0.033736, 0.000833, 0.009996, 0.002499]))
 print(nucleotideFrequencies(['ACACGTAC', 'CCACGTCACA', 'TTCGTCGTACG']))
+print(scoreProfile([{'A': 0.142857, 'C': 0.428571, 'G': 0.142857, 'T': 0.285714}, {'A': 0.142857, 'C': 0.285714, 'G': 0.428571, 'T': 0.142857}, {
+      'A': 0.285714, 'C': 0.142857, 'G': 0.142857, 'T': 0.428571}, {'A': 0.285714, 'C': 0.428571, 'G': 0.142857, 'T': 0.142857}], {'A': 0.241379, 'C': 0.379310, 'G': 0.172413, 'T': 0.206897}))
