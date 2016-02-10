@@ -9,7 +9,11 @@ def readInput(filename):
     Return:
         string: Sequence read from the file
     """
-    return [x.strip() for x in open(filename).readlines()]
+    sequences = []
+    for x in open(filename).readlines():
+        sequences.append(x[:-1])
+
+    return sequences
 
 
 def randomStart(sequences, k):
@@ -42,7 +46,11 @@ def getMotif(sequences, startLocations, k):
     """
     kmers = []
     for i in range(0, len(sequences)):
-        kmers.append(sequences[i][startLocations[i]:startLocations[i] + k])
+        if startLocations[i] != -1:
+            kmers.append(sequences[i][startLocations[i]:startLocations[i] + k])
+        else:
+            kmers.append('')
+
     return kmers
 
 
@@ -184,8 +192,23 @@ def gibbsSampling(sequences, k, iterations):
     Returns:
         String: List with best motifs
     """
+    motifList = []
+    scores = []
+
+    for i in range(0, iterations):
+        startLocations = randomStart(sequences, k)
+        motifs = getMotif(sequences, startLocations, k)
+        motifList.append(motifs)
+        profile = constructProfile(motifs)
+        nucFreq = nucleotideFrequencies(sequences)
+        scores.append(scoreProfile(profile, nucFreq))
+
+    return {'motifs': motifList[scores.index(max(scores))], 'k': k, 'highestScore': max(scores)}
+
 
 # Tests ------------------------------------------------------------------
+
+"""print(readInput('TraR.txt'))
 print(randomStart(['ACACGTAC', 'CCACGTCACA', 'TTCGTCGTACG'], 4))
 print(getMotif(['ACACGTAC', 'CCACGTCACA', 'TTCGTCGTACG'], [3, 5, 2], 4))
 print(constructProfile(['CGTA', 'TCAC', 'CGTC']))
@@ -196,3 +219,7 @@ print(randomlySelect([0.014994, 0.001249, 0.000833,
 print(nucleotideFrequencies(['ACACGTAC', 'CCACGTCACA', 'TTCGTCGTACG']))
 print(scoreProfile([{'A': 0.142857, 'C': 0.428571, 'G': 0.142857, 'T': 0.285714}, {'A': 0.142857, 'C': 0.285714, 'G': 0.428571, 'T': 0.142857}, {
       'A': 0.285714, 'C': 0.142857, 'G': 0.142857, 'T': 0.428571}, {'A': 0.285714, 'C': 0.428571, 'G': 0.142857, 'T': 0.142857}], {'A': 0.241379, 'C': 0.379310, 'G': 0.172413, 'T': 0.206897}))
+"""
+
+for i in range(0, 2000):
+    print(gibbsSampling(readInput('TraR.txt'), 10, 200))
