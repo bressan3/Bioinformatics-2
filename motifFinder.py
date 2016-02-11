@@ -1,3 +1,6 @@
+"""
+@authors: Lucas, Josh, Amy, Daniele
+"""
 import random
 import math
 
@@ -62,6 +65,7 @@ def constructProfile(motifs):
         dictionary: List of dictionaries representing the profile of the k-mers
     """
     kmersProfile = []
+    divideValue = 0
     for i in range(0, len(motifs[0])):
         freqA = 1
         freqC = 1
@@ -76,9 +80,10 @@ def constructProfile(motifs):
                 freqG += 1
             elif motifs[j][i] == 'T':
                 freqT += 1
+        if i == 0:
+            divideValue = freqA + freqC + freqG + freqT
 
-        kmersProfile.append({'A': freqA / (len(motifs) + 4), 'C': freqC / (
-            len(motifs) + 4), 'G': freqG / (len(motifs) + 4), 'T': freqT / (len(motifs) + 4)})
+        kmersProfile.append({'A': freqA / divideValue, 'C': freqC / divideValue, 'G': freqG / divideValue, 'T': freqT / divideValue})
 
     return kmersProfile
 
@@ -121,7 +126,7 @@ def applyProfile(profile, sequence):
 
 def randomlySelect(probabilities):
     """ Accepts a list of probabilities as input. The function should normalize
-    the numbers (divide by the total so they sum to 1) and then randomly (weighted) select and return the
+    the numbers (divideValue by the total so they sum to 1) and then randomly (weighted) select and return the
     index of the selected number.
     Args:
         probabilities (float): List of probabilities
@@ -204,22 +209,3 @@ def gibbsSampling(sequences, k, iterations):
         scores.append(scoreProfile(profile, nucFreq))
 
     return {'motifs': motifList[scores.index(max(scores))], 'k': k, 'highestScore': max(scores)}
-
-
-# Tests ------------------------------------------------------------------
-
-"""print(readInput('TraR.txt'))
-print(randomStart(['ACACGTAC', 'CCACGTCACA', 'TTCGTCGTACG'], 4))
-print(getMotif(['ACACGTAC', 'CCACGTCACA', 'TTCGTCGTACG'], [3, 5, 2], 4))
-print(constructProfile(['CGTA', 'TCAC', 'CGTC']))
-print(getSingleScore(constructProfile(['CGTA', 'TCAC', 'CGTC']), 'CACA'))
-print(applyProfile(constructProfile(['CGTA', 'TCAC', 'CGTC']), 'CCACGTCACA'))
-print(randomlySelect([0.014994, 0.001249, 0.000833,
-                      0.033736, 0.000833, 0.009996, 0.002499]))
-print(nucleotideFrequencies(['ACACGTAC', 'CCACGTCACA', 'TTCGTCGTACG']))
-print(scoreProfile([{'A': 0.142857, 'C': 0.428571, 'G': 0.142857, 'T': 0.285714}, {'A': 0.142857, 'C': 0.285714, 'G': 0.428571, 'T': 0.142857}, {
-      'A': 0.285714, 'C': 0.142857, 'G': 0.142857, 'T': 0.428571}, {'A': 0.285714, 'C': 0.428571, 'G': 0.142857, 'T': 0.142857}], {'A': 0.241379, 'C': 0.379310, 'G': 0.172413, 'T': 0.206897}))
-"""
-
-for i in range(0, 2000):
-    print(gibbsSampling(readInput('TraR.txt'), 10, 200))
