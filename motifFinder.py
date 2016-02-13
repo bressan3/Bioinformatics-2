@@ -1,5 +1,5 @@
-"""
-@authors: Lucas, Josh, Amy, Daniele
+""" File containing the neded functions to run our program.
+    @authors: Lucas, Josh, Amy, Daniele
 """
 import random
 import math
@@ -112,7 +112,7 @@ def applyProfile(profile, sequence):
     profile applied to each of the subsequences.
     Args:
         profile (dictionary): List of dictionaries
-        sequence (string): Sequenceof any length
+        sequence (string): Sequence of any length
     Returns:
         float: List of scores of each subsequence
     """
@@ -187,7 +187,7 @@ def scoreProfile(profile, nucFreq):
     return entropy
 
 
-def gibbsSampling(sequences, k, iterations):
+def gibbsSampling(sequences, k, iterations, iterable):
     """ The function returns the best motifs which is the highest scoring motifs using the relative
     entropy from nucleotideFrequencies().
     Args:
