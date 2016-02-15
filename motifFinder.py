@@ -168,13 +168,15 @@ def nucleotideFrequencies(sequences):
     return {'A': freqA / seqTotalSize, 'C': freqC / seqTotalSize, 'G': freqG / seqTotalSize, 'T': freqT / seqTotalSize}
 
 
-def scoreProfile(profile, nucFreq):
+def scoreProfile(profile, nucFreq, kmerSize):
     """ Accepts a profile (a list of dictionaries as returned by constructProfile()) and a
     dictionary of nucleotide frequencies (as returned by nucleotideFrequencies()) and return
     a number representing the relative entropy of the profile.
     Args:
         profile (dictionary): List of dictionaries as returned by constructProfile()
         nucFreq (dictionary): Dictionary of nucleotide frequencies as returned by nucleotideFrequencies()
+        kmerSize (int): Current kmer's size so we can normalize the entropy and get proportional values
+            for all different k-mer lengths.
     Returns:
         float: Relative entropy
     """
@@ -184,7 +186,7 @@ def scoreProfile(profile, nucFreq):
         entropy += (profile[i]['A'] * math.log(profile[i]['A'] / nucFreq['A'], 2)) + (profile[i]['C'] * math.log(profile[i]['C'] / nucFreq['C'], 2)) + (
             profile[i]['G'] * math.log(profile[i]['G'] / nucFreq['G'], 2)) + (profile[i]['T'] * math.log(profile[i]['T'] / nucFreq['T'], 2))
 
-    return entropy
+    return entropy / kmerSize
 
 
 def gibbsSampling(sequences, k, iterations, iterable):
@@ -206,6 +208,6 @@ def gibbsSampling(sequences, k, iterations, iterable):
         motifList.append(motifs)
         profile = constructProfile(motifs)
         nucFreq = nucleotideFrequencies(sequences)
-        scores.append(scoreProfile(profile, nucFreq))
+        scores.append(scoreProfile(profile, nucFreq, k))
 
     return {'motifs': motifList[scores.index(max(scores))], 'k': k, 'highestScore': max(scores)}
