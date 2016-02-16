@@ -3,10 +3,22 @@ too long to get and analize the sequences it has been implemented using multipro
     @authors: Lucas, Josh, Amy, Daniele
 """
 import motifFinder as mf
-import time
+from time import time, sleep, localtime, strftime
 from multiprocessing import Pool
 from functools import partial
 import sys
+import json
+
+
+def getSecondStrand(sequences):
+    compDNA = []
+    for dna in sequences:
+        compDNAAux = dna.replace('A', 't')
+        compDNAAux = compDNAAux.replace('T', 'a')
+        compDNAAux = compDNAAux.replace('C', 'g')
+        compDNAAux = compDNAAux.replace('G', 'c')
+        compDNA.append(compDNAAux.upper())
+    return compDNA
 
 
 # Running the program:
@@ -14,13 +26,11 @@ print('Running...')
 print('1/3 - Applying Gibbs Sampling...')
 # List for the multiprogramming pool
 bestMotifsRes = []
-# List for the dictionaries returned by gibbsSampling()
+# List of best motifs returned by gibbsSampling()
 bestMotifsDict = []
-# List for the motifs in the dictionary returned by gibbsSampling()
-bestMotifs = []
 fileToRead = mf.readInput('TraR.txt')
-# Only used to print values on the screen for reference
-startTime = time.time()
+# Only used to print time values on the screen for reference
+startTime = time()
 
 # Number of times we'll run gibbsSampling()
 iterable = range(2000)
@@ -31,47 +41,77 @@ for kmerSize in range(minMotifSize, maxMotifSize + 1):
     pool = Pool()
     function = partial(mf.gibbsSampling, fileToRead, kmerSize, 200)
     bestMotifsRes = pool.map_async(function, iterable)
-    # Updates the percentage on the console
+    # Updates the percentage on the console screen
     while not bestMotifsRes.ready():
         remaining = 100 - (bestMotifsRes._number_left * bestMotifsRes._chunksize / (len(iterable) / 100))
         sys.stderr.write('\r\033[2KK-mer: %d of %d, Progress: %d%%' % (kmerSize, maxMotifSize, remaining))
         sys.stderr.flush()
-        time.sleep(.1)
+        sleep(.1)
     pool.close()
     pool.join()
     for dicts in bestMotifsRes.get():
         bestMotifsDict.append(dicts)
+print('\n')
 # print(bestMotifsDict)
 print('Gibbs Sampling Done!')
 
-# Copy the motifs that we got from gibbsSampling to a list so we can analize them later
-print('2/3 - Creating the Best Motifs List...')
-for dictionary in bestMotifsDict:
-    for motifs in dictionary['motifs']:
-        bestMotifs.append(motifs)
-# print(bestMotifs)
 
-# Non multi-threaded part. Only used for comparison purposes
-"""mot = []
-percentage = 0
+# --------------------------------------------------------------------------------------------------------------
 
-for i in range(0, 2000):
-    if int(100 * (i / 2000)) != percentage:
-        print(percentage, '%')
-    for kmerSize in range(12, 21):
-        curBestMotif = mf.gibbsSampling(mf.readInput('TraR.txt'), kmerSize, 200, 0)
-        for motif in curBestMotif:
-            bestMotifs.append(motif)
-    percentage = int(100 * (i / 2000))
 
-print('Gibbs Sampling Done!')
-print('2/2 - Applying Profile to Genome...')
-print('Applying Profile to Genome Done!')"""
+# Copy the best motifs that we got from gibbsSampling to a list so we can analize them later
+print('2/3 - Gathering the Best Motifs...')
+# Finds the index in the list of dictionaries returned by gibbsSampling() where maxScore is
+maxScoreIndex = next(index for (index, d) in enumerate(bestMotifsDict) if d['highestScore'] == max(item['highestScore'] for item in bestMotifsDict))
+# Adds the best found motifs into a list
+bestMotifs = bestMotifsDict[maxScoreIndex]['motifs']
+# print('Max score ========', maxScore, 'Index ===========', maxScoreIndex, 'Motifs ========', bestMotifs)
+print('Gathering the Best Motifs Done!')
 
+
+# --------------------------------------------------------------------------------------------------------------
+
+
+print('3/3 - Applying Profile to Genome...')
+profile = mf.constructProfile(bestMotifs)
+singleScores = []
+# Get each motif's single score and puts the worstScoring motif into a dictionary
+for motif in bestMotifs:
+    singleScores.append(mf.getSingleScore(profile, motif))
+worstScoringMotif = {'Motif': bestMotifs[singleScores.index(min(singleScores))], 'Score': min(singleScores)}
+# List of dictionaries containing the positions where the profile achieves a score as high as the
+# worst scoring motif is located in each given DNA sequence
+dnaScores = []
+for sequenceNumber in range(0, len(fileToRead)):
+    applyProfileScores = mf.applyProfile(profile, fileToRead[sequenceNumber])
+    for i in range(0, len(applyProfileScores)):
+        if applyProfileScores[i] == worstScoringMotif['Score']:
+            dnaScores.append({'Sequence': fileToRead[sequenceNumber][i: i + len(profile) + 1], 'Position': i, 'Score': applyProfileScores[i], 'DNASequence#': sequenceNumber + 1, 'Strand #': 1})
+# Analizes the complementary DNA
+secondStrand = getSecondStrand(fileToRead)
+for sequenceNumber in range(0, len(fileToRead)):
+    applyProfileScores = mf.applyProfile(profile, secondStrand[sequenceNumber])
+    for i in range(0, len(applyProfileScores)):
+        if applyProfileScores[i] <= worstScoringMotif['Score']:
+            dnaScores.append({'Sequence': fileToRead[sequenceNumber][i: i + len(profile) + 1], 'Position': i, 'Score': applyProfileScores[i], 'DNASequence#': sequenceNumber + 1, 'Strand #': 2})
+print('Applying Profile to Genome Done!')
+# Writing a file with the results
+# resultsFile = open('results.txt', 'w+')
+# (resultsFile.write("%s\n" % item) for item in dnaScores)
+
+with open('results.json', 'w+') as f:
+    f.write(strftime("Created on: %Y-%m-%d %H:%M:%S\n", localtime()))
+    for scores in dnaScores:
+        json.dump(scores, f)
+        f.write('\n')
 print('Done!')
 
+
+# --------------------------------------------------------------------------------------------------------------
+
+
 # Calulates and converts total running time to hh:mm:ss
-finalTime = time.time() - startTime
+finalTime = time() - startTime
 minutes, seconds = divmod(finalTime, 60)
 hours, minutes = divmod(minutes, 60)
 print('Total running time: %d:%d:%d' % (hours, minutes, seconds))
