@@ -102,7 +102,7 @@ def getSingleScore(profile, kmer):
     for i in range(1, len(kmer)):
         score *= profile[i][kmer[i]]
 
-    return score
+    return score / len(profile)
 
 
 def applyProfile(profile, sequence):

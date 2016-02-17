@@ -3,22 +3,12 @@ too long to get and analize the sequences it has been implemented using multipro
     @authors: Lucas, Josh, Amy, Daniele
 """
 import motifFinder as mf
+import helperFunctions as hf
 from time import time, sleep, localtime, strftime
 from multiprocessing import Pool
 from functools import partial
 import sys
 import json
-
-
-def getSecondStrand(sequences):
-    compDNA = []
-    for dna in sequences:
-        compDNAAux = dna.replace('A', 't')
-        compDNAAux = compDNAAux.replace('T', 'a')
-        compDNAAux = compDNAAux.replace('C', 'g')
-        compDNAAux = compDNAAux.replace('G', 'c')
-        compDNA.append(compDNAAux.upper())
-    return compDNA
 
 
 # Running the program:
@@ -66,6 +56,11 @@ maxScoreIndex = next(index for (index, d) in enumerate(bestMotifsDict) if d['hig
 # Adds the best found motifs into a list
 bestMotifs = bestMotifsDict[maxScoreIndex]['motifs']
 # print('Max score ========', maxScore, 'Index ===========', maxScoreIndex, 'Motifs ========', bestMotifs)
+# Creates a file that reports the best scoring motifs, k and the scoreProfile()
+with open('Results/bestMotifs.json', 'w+') as f:
+    f.write(strftime("Created on: %Y-%m-%d %H:%M:%S\n", localtime()))
+    json.dump(bestMotifsDict[maxScoreIndex], f)
+    f.write('\n')
 print('Gathering the Best Motifs Done!')
 
 
@@ -83,24 +78,36 @@ worstScoringMotif = {'Motif': bestMotifs[singleScores.index(min(singleScores))],
 # worst scoring motif is located in each given DNA sequence
 dnaScores = []
 for sequenceNumber in range(0, len(fileToRead)):
+    # Applies a profile (gets single score for each subsequence) for each kmer in the current sequence
     applyProfileScores = mf.applyProfile(profile, fileToRead[sequenceNumber])
     for i in range(0, len(applyProfileScores)):
-        if applyProfileScores[i] == worstScoringMotif['Score']:
-            dnaScores.append({'Sequence': fileToRead[sequenceNumber][i: i + len(profile) + 1], 'Position': i, 'Score': applyProfileScores[i], 'DNASequence#': sequenceNumber + 1, 'Strand #': 1})
-# Analizes the complementary DNA
-secondStrand = getSecondStrand(fileToRead)
-for sequenceNumber in range(0, len(fileToRead)):
-    applyProfileScores = mf.applyProfile(profile, secondStrand[sequenceNumber])
-    for i in range(0, len(applyProfileScores)):
-        if applyProfileScores[i] <= worstScoringMotif['Score']:
-            dnaScores.append({'Sequence': fileToRead[sequenceNumber][i: i + len(profile) + 1], 'Position': i, 'Score': applyProfileScores[i], 'DNASequence#': sequenceNumber + 1, 'Strand #': 2})
-print('Applying Profile to Genome Done!')
-# Writing a file with the results
-# resultsFile = open('results.txt', 'w+')
-# (resultsFile.write("%s\n" % item) for item in dnaScores)
+        if applyProfileScores[i] >= worstScoringMotif['Score']:
+            dnaScores.append({'Sequence': fileToRead[sequenceNumber][i: i + len(profile)], 'Position': i, 'Score': applyProfileScores[i], 'DNASequence#': sequenceNumber + 1, 'Strand #': 1})
 
-with open('results.json', 'w+') as f:
+# Getting the reverse complement
+reverseComplement = hf.getSecondStrand(fileToRead)
+for sequenceNumber in range(0, len(reverseComplement)):
+    # Applies a profile (gets single score for each subsequence) for each kmer in the current sequence
+    applyProfileScores = mf.applyProfile(profile, reverseComplement[sequenceNumber])
+    for i in range(0, len(applyProfileScores)):
+        if applyProfileScores[i] >= worstScoringMotif['Score']:
+            dnaScores.append({'Sequence': reverseComplement[sequenceNumber][i: i + len(profile)], 'Position': i, 'Score': applyProfileScores[i], 'DNASequence#': sequenceNumber + 1, 'Strand #': 2})
+
+print('Applying Profile to Genome Done!')
+
+# Reporting the results
+with open('Results/Profile.json', 'w+') as f:
     f.write(strftime("Created on: %Y-%m-%d %H:%M:%S\n", localtime()))
+    f.write('Motifs Profile: ')
+    json.dump(profile, f)
+    f.write('\n')
+    f.write('Single Scores: ')
+    f.write('\n')
+    for i in range(0, len(singleScores)):
+        json.dump(bestMotifs[i], f)
+        f.write(': ')
+        json.dump(singleScores[i], f)
+        f.write('\n')
     for scores in dnaScores:
         json.dump(scores, f)
         f.write('\n')
