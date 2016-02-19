@@ -1,4 +1,4 @@
-""" Library containing the extra functions we need for the assignment
+""" Library containing the extra functions we need for the main part of the assignment
     @authors: Lucas, Josh, Amy, Daniele
 """
 import motifFinder as mf
@@ -27,7 +27,18 @@ def getSecondStrand(sequences):
     return compDNA
 
 
-def gatherMotifs(profile, sequences, worstScoringMotif, strand):
+def gatherFinalResults(profile, sequences, worstScoringMotif, strand):
+    """ Find all locations in the Agrobacterium tumefaciens C58 genome where our
+        profile achieves a score as high as the worst scoring motif (returned by gibbsSampling())
+    Args:
+        profile (dictionary): Profile of the motifs returned by gibbsSampling()
+        sequences (string): List of DNA sequences
+        worstScoringMotif (dictionary): Dictionary containing important info about the worst scoring motif
+            (from the best scoring ones got from gibbsSampling())
+        strand (int): 1 for the sequence from the file / 2 from the reverse complement
+    Returns:
+        dictionary: A list of dictionaries of the motifs that score as high as worstScoringMotif
+    """
     dnaScores = []
     for sequenceNumber in range(0, len(sequences)):
         # Applies a profile (gets single score for each subsequence) for each kmer in the current sequence
@@ -57,6 +68,18 @@ def gatherMotifs(profile, sequences, worstScoringMotif, strand):
 
 
 def writeFile(fileName, profile, singleScores, bestMotifs, dnaScores, bestMotif):
+    """ Writes the gathered data to the Results.json file
+    Args:
+        fileName (string): Location of the file we want to write on
+        profile (dictionary): Profile of the motifs returned by gibbsSampling()
+        singleScores (float): List of the single scores of each motif returned by gibbsSampling()
+        bestMotifs (string): List containing the best scoring motifs from gibbsSampling()
+        dnaScores (dictionary): List of fictionaries containing the info of the motifs returned
+            by gatherFinalResults()
+        bestMotif (dictionary): Dictionary returned by gibbsSampling() where we have the best scoring motif
+    Returns:
+        None: No return
+    """
     with open(fileName, 'w+') as f:
         f.write(strftime("Created on: %Y-%m-%d %H:%M:%S\n", localtime()))
         f.write('Best Motifs: ')

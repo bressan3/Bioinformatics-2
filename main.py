@@ -22,7 +22,7 @@ fileToRead = mf.readInput('TraR.txt')
 startTime = time()
 
 # Number of times we'll run gibbsSampling()
-iterable = range(100)
+iterable = range(2000)
 # Max and min motifs sizes
 minMotifSize = 12
 maxMotifSize = 20
@@ -71,7 +71,7 @@ worstScoringMotif = {'Motif': bestMotifs[singleScores.index(min(singleScores))],
 
 # Getting the reverse complement
 reverseComplement = hf.getSecondStrand(fileToRead)
-dnaScores = hf.gatherMotifs(profile, fileToRead, worstScoringMotif, 1) + hf.gatherMotifs(profile, reverseComplement, worstScoringMotif, 2)
+dnaScores = hf.gatherFinalResults(profile, fileToRead, worstScoringMotif, 1) + hf.gatherFinalResults(profile, reverseComplement, worstScoringMotif, 2)
 
 print('Applying Profile to Genome Done!')
 
